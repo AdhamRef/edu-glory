@@ -1,0 +1,195 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "contact": "Contact",
+    "universities": "Universities",
+    "institutes": "Institutes",
+    "language": "العربية",
+    "privateUniversities": "Private Universities",
+    "foreignUniversities": "Foreign Universities",
+    "governmentUniversities": "Government Universities",
+    "viewAll": "View All"
+  },
+  "home": {
+    "title": "Welcome to Education Glory",
+    "subtitle": "Your Gateway to Higher Education",
+    "description": "Discover top universities and institutes. Find the perfect program for your future.",
+    "explore": "Explore Programs",
+    "featured": "Featured Institutions"
+  },
+  "landing": {
+    "hero": {
+      "title": "Start Your Educational Journey",
+      "titleHighlight": "with Education Glory",
+      "subtitle": "Do you dream of studying in Malaysia? We make your dream a reality easily and quickly",
+      "description": "Comprehensive services for students of all nationalities — reliable, professional, and completely free",
+      "exploreButton": "Explore Universities",
+      "contactButton": "Contact Us",
+      "trust": {
+        "free": "100% Free Consultations",
+        "certified": "Official Certified Representative",
+        "support": "Continuous Support Throughout the Journey"
+      }
+    },
+    "services": {
+      "title": "Our Core Services",
+      "subtitle": "We provide everything you need to start your educational journey with confidence and comfort",
+      "consultation": {
+        "title": "Free Consultations",
+        "description": "Our expert team provides personalized and free consultations to identify the best specializations, universities, and institutes suitable for your academic and future goals.",
+        "highlight": "We create a clear plan for your educational journey to ensure a strong and successful start"
+      },
+      "admission": {
+        "title": "Admission & Visa",
+        "description": "We handle all academic and administrative procedures to obtain official admission from accredited universities and institutes, while ensuring the completion of student visa procedures easily and quickly.",
+        "highlight": "With us, you won't face any complications"
+      },
+      "housing": {
+        "title": "Housing & Reception",
+        "description": "We provide safe and comfortable accommodation options, whether private apartments or student residences, near the university or institute.",
+        "highlight": "Airport reception service to start your journey with comfort and peace of mind"
+      }
+    },
+    "support": {
+      "title": "With You Every Step",
+      "subtitle": "Inside or outside Malaysia — our support never stops",
+      "description": "At Education Glory, our support doesn't stop at registration or arrival. We're with you throughout your educational journey, before travel, during studies, and even upon return or vacations.",
+      "features": {
+        "academic": {
+          "title": "Continuous Academic Consultations",
+          "description": "Ongoing support to guide you through your academic journey"
+        },
+        "visa": {
+          "title": "Visa & Permit Follow-up",
+          "description": "We help you with all visa and renewal procedures"
+        },
+        "accommodation": {
+          "title": "Housing Arrangement & Reception Services",
+          "description": "We provide you with a safe and comfortable place at every stage"
+        },
+        "transfer": {
+          "title": "Academic Transfers",
+          "description": "We help you update your academic plans according to your needs"
+        },
+        "additional": {
+          "title": "Comprehensive Additional Support",
+          "description": "Any assistance you need for a smooth and comfortable experience"
+        },
+        "vacation": {
+          "title": "Vacation & Return Follow-up",
+          "description": "We're with you even during vacation periods"
+        }
+      },
+      "commitment": "We never leave you alone — your success and comfort are our priority"
+    },
+    "whyUs": {
+      "title": "Why Education Glory",
+      "subtitle": "We make your educational journey easy, safe, and free",
+      "reasons": {
+        "free": {
+          "title": "100% Free",
+          "description": "All our services are completely free — from the first consultation until your complete settlement, with no hidden fees"
+        },
+        "certified": {
+          "title": "Official Certified Representative",
+          "description": "We are an official representative of Malaysian universities and institutes — guaranteed trust and reliability"
+        },
+        "experience": {
+          "title": "Extensive Experience",
+          "description": "We've served more than 10,000 students from over 20 countries — we understand your needs well"
+        },
+        "comprehensive": {
+          "title": "Comprehensive & Continuous Support",
+          "description": "With you at every step — before travel, during studies, and even after graduation"
+        }
+      }
+    },
+    "cta": {
+      "title": "Start Your Educational Journey Today",
+      "description": "Don't miss the opportunity — contact us now and get a free consultation to achieve your academic dream in Malaysia",
+      "primaryButton": "Get Free Consultation",
+      "secondaryButton": "Explore Universities",
+      "features": {
+        "instant": "Instant Consultation",
+        "noHidden": "No Hidden Fees",
+        "professional": "Professional Service"
+      }
+    }
+  },
+  "about": {
+    "title": "About Us",
+    "description": "Education Glory is your trusted partner in finding the right educational path. We connect students with top universities and institutes worldwide."
+  },
+  "contact": {
+    "title": "Contact Us",
+    "description": "Get in touch with our team for any inquiries.",
+    "name": "Your Name",
+    "email": "Email Address",
+    "message": "Message",
+    "send": "Send Message"
+  },
+  "university": {
+    "specializations": "Specializations",
+    "duration": "Duration",
+    "tuition": "Tuition",
+    "apply": "Apply Now",
+    "viewDetails": "View Details",
+    "noSpecializations": "No specializations available",
+    "type": "University Type",
+    "private": "Private University",
+    "foreign": "Foreign University",
+    "government": "Government University"
+  },
+  "apply": {
+    "title": "Application Form",
+    "subtitle": "Apply for",
+    "studentName": "Full Name",
+    "email": "Email Address",
+    "phone": "Phone Number",
+    "nationality": "Nationality",
+    "residence": "Current Residence",
+    "specialization": "Select Specialization",
+    "submit": "Submit Application",
+    "success": "Application submitted successfully!",
+    "error": "Failed to submit application. Please try again."
+  },
+  "admin": {
+    "dashboard": "Dashboard",
+    "universities": "Universities",
+    "applications": "Applications",
+    "addUniversity": "Add University",
+    "editUniversity": "Edit University",
+    "deleteUniversity": "Delete University",
+    "logout": "Logout",
+    "login": "Admin Login",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign In",
+    "export": "Export CSV",
+    "filters": "Filters",
+    "all": "All",
+    "actions": "Actions",
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirmDelete": "Are you sure you want to delete this?",
+    "published": "Published",
+    "draft": "Draft",
+    "universityType": "University Type",
+    "selectType": "Select Type"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "noResults": "No results found",
+    "back": "Back"
+  },
+  "footer": {
+    "rights": "All rights reserved",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service"
+  }
+}
