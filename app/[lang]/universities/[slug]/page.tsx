@@ -7,7 +7,7 @@ import { SpecializationsTable } from "@/components/specializations-table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, ArrowRight, GraduationCap } from "lucide-react"
-import DOMPurify from "isomorphic-dompurify"
+import sanitizeHtml from "sanitize-html"
 
 export default async function UniversityPage({
   params,
@@ -29,7 +29,31 @@ export default async function UniversityPage({
   const name = lang === "ar" ? university.name_ar : university.name_en
   const shortDesc = lang === "ar" ? university.short_ar : university.short_en
   const content = lang === "ar" ? university.content_ar : university.content_en
-  const sanitizedContent = content ? DOMPurify.sanitize(content) : ""
+  const sanitizedContent = content
+  ? sanitizeHtml(content, {
+      allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+        "img",
+        "iframe",
+        "h1",
+        "h2",
+        "h3",
+      ]),
+      allowedAttributes: {
+        ...sanitizeHtml.defaults.allowedAttributes,
+        iframe: ["src", "allow", "allowfullscreen", "frameborder"],
+        img: ["src", "alt", "title", "width", "height"],
+        a: ["href", "name", "target", "rel"],
+      },
+      allowedSchemes: ["http", "https", "mailto"],
+      transformTags: {
+        a: sanitizeHtml.simpleTransform("a", {
+          rel: "noopener noreferrer",
+          target: "_blank",
+        }),
+      },
+    })
+  : ""
+
   const BackArrow = lang === "ar" ? ArrowRight : ArrowLeft
 
   const getTypeLabel = () => {
