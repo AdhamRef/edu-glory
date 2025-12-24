@@ -9,6 +9,7 @@
     "lint": "next lint",
     "postbuild": "prisma generate"
   },
+  
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
     "@prisma/client": "^6.19.1",
