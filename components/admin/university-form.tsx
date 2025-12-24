@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -9,7 +8,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { TipTapEditor } from "@/components/admin/tiptap-editor"
 import { ImageUploader } from "@/components/admin/image-uploader"
 import { Loader2 } from "lucide-react"
@@ -43,7 +48,9 @@ export function UniversityForm({ university }: UniversityFormProps) {
   const [contentAr, setContentAr] = useState(university?.content_ar || "")
   const [images, setImages] = useState<string[]>(university?.images || [])
   const [type, setType] = useState(university?.type || "university")
-  const [universityType, setUniversityType] = useState<string | null>(university?.universityType || null)
+  const [universityType, setUniversityType] = useState<string | null>(
+    university?.universityType || null,
+  )
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -54,7 +61,7 @@ export function UniversityForm({ university }: UniversityFormProps) {
 
     const data = {
       slug: formData.get("slug"),
-      type: type,
+      type,
       universityType: type === "university" ? universityType : null,
       name_en: formData.get("name_en"),
       name_ar: formData.get("name_ar"),
@@ -68,7 +75,9 @@ export function UniversityForm({ university }: UniversityFormProps) {
     }
 
     try {
-      const url = university ? `/api/universities/${university.id}` : "/api/universities"
+      const url = university
+        ? `/api/universities/${university.id}`
+        : "/api/universities"
       const method = university ? "PUT" : "POST"
 
       const res = await fetch(url, {
@@ -99,47 +108,52 @@ export function UniversityForm({ university }: UniversityFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 pb-28 md:pb-0">
+      {/* BASIC INFO */}
       <Card>
         <CardContent className="pt-6 space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name_en">Name (English) *</Label>
+              <Label>Name (English) *</Label>
               <Input
-                id="name_en"
                 name="name_en"
                 defaultValue={university?.name_en}
                 required
                 onChange={(e) => {
                   if (!university) {
-                    const slugInput = document.getElementById("slug") as HTMLInputElement
-                    if (slugInput) {
-                      slugInput.value = generateSlug(e.target.value)
-                    }
+                    const slugInput = document.getElementById(
+                      "slug",
+                    ) as HTMLInputElement
+                    if (slugInput) slugInput.value = generateSlug(e.target.value)
                   }
                 }}
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="name_ar">Name (Arabic) *</Label>
-              <Input id="name_ar" name="name_ar" defaultValue={university?.name_ar} required dir="rtl" />
+              <Label>Name (Arabic) *</Label>
+              <Input
+                name="name_ar"
+                defaultValue={university?.name_ar}
+                required
+                dir="rtl"
+              />
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="slug">Slug *</Label>
+              <Label>Slug *</Label>
               <Input id="slug" name="slug" defaultValue={university?.slug} required />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="type">Type *</Label>
+              <Label>Type *</Label>
               <Select
                 value={type}
                 onValueChange={(value) => {
                   setType(value)
-                  if (value === "institute") {
-                    setUniversityType(null)
-                  }
+                  if (value === "institute") setUniversityType(null)
                 }}
               >
                 <SelectTrigger>
@@ -155,35 +169,42 @@ export function UniversityForm({ university }: UniversityFormProps) {
 
           {type === "university" && (
             <div className="space-y-2">
-              <Label htmlFor="universityType">University Type *</Label>
-              <Select value={universityType || ""} onValueChange={setUniversityType}>
+              <Label>University Type *</Label>
+              <Select
+                value={universityType || ""}
+                onValueChange={setUniversityType}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select university type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="private">جامعة خاصة - Private University</SelectItem>
-                  <SelectItem value="foreign">جامعة أجنبية - Foreign University</SelectItem>
-                  <SelectItem value="government">جامعة حكومية - Government University</SelectItem>
+                  <SelectItem value="private">Private</SelectItem>
+                  <SelectItem value="foreign">Foreign</SelectItem>
+                  <SelectItem value="government">Government</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           )}
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="short_en">Short Description (English)</Label>
-              <Input id="short_en" name="short_en" defaultValue={university?.short_en || ""} />
+              <Label>Short Description (English)</Label>
+              <Input name="short_en" defaultValue={university?.short_en || ""} />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="short_ar">Short Description (Arabic)</Label>
-              <Input id="short_ar" name="short_ar" defaultValue={university?.short_ar || ""} dir="rtl" />
+              <Label>Short Description (Arabic)</Label>
+              <Input
+                name="short_ar"
+                defaultValue={university?.short_ar || ""}
+                dir="rtl"
+              />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="videoUrl">YouTube Video URL</Label>
+            <Label>YouTube Video URL</Label>
             <Input
-              id="videoUrl"
               name="videoUrl"
               type="url"
               defaultValue={university?.videoUrl || ""}
@@ -192,14 +213,19 @@ export function UniversityForm({ university }: UniversityFormProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            <Switch id="isPublished" name="isPublished" defaultChecked={university?.isPublished ?? true} />
+            <Switch
+              id="isPublished"
+              name="isPublished"
+              defaultChecked={university?.isPublished ?? true}
+            />
             <Label htmlFor="isPublished">Published</Label>
           </div>
         </CardContent>
       </Card>
 
+      {/* CONTENT */}
       <Card>
-        <CardContent className="pt-6 space-y-4">
+        <CardContent className="pt-6 space-y-4 overflow-hidden">
           <div className="space-y-2">
             <Label>Content (English)</Label>
             <TipTapEditor content={contentEn} onChange={setContentEn} />
@@ -207,11 +233,16 @@ export function UniversityForm({ university }: UniversityFormProps) {
 
           <div className="space-y-2">
             <Label>Content (Arabic)</Label>
-            <TipTapEditor content={contentAr} onChange={setContentAr} dir="rtl" />
+            <TipTapEditor
+              content={contentAr}
+              onChange={setContentAr}
+              dir="rtl"
+            />
           </div>
         </CardContent>
       </Card>
 
+      {/* IMAGES */}
       <Card>
         <CardContent className="pt-6">
           <Label className="mb-4 block">Images</Label>
@@ -219,14 +250,31 @@ export function UniversityForm({ university }: UniversityFormProps) {
         </CardContent>
       </Card>
 
-      {error && <p className="text-destructive text-sm bg-destructive/10 p-3 rounded-lg">{error}</p>}
+      {error && (
+        <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
+          {error}
+        </p>
+      )}
 
-      <div className="flex gap-4">
-        <Button type="submit" disabled={loading} className="bg-secondary hover:bg-secondary/90">
-          {loading && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
+      {/* ACTION BAR */}
+      <div className="fixed inset-x-0 bottom-0 z-30 bg-background border-t p-4 flex gap-3 md:static md:border-0 md:p-0">
+        <Button
+          type="submit"
+          disabled={loading}
+          className="flex-1 bg-secondary hover:bg-secondary/90"
+        >
+          {loading && (
+            <Loader2 className="h-4 w-4 me-2 animate-spin" />
+          )}
           {university ? "Update University" : "Create University"}
         </Button>
-        <Button type="button" variant="outline" onClick={() => router.push("/admin/universities")}>
+
+        <Button
+          type="button"
+          variant="outline"
+          className="flex-1"
+          onClick={() => router.push("/admin/universities")}
+        >
           Cancel
         </Button>
       </div>
