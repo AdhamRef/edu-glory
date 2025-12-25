@@ -5,8 +5,24 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Edit, Trash2, Loader2, FilePlus, X } from "lucide-react"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Loader2,
+  FilePlus,
+  X,
+} from "lucide-react"
+
+/* ================= TYPES ================= */
 
 interface Specialization {
   id: string
@@ -21,9 +37,7 @@ interface Props {
   specializations: Specialization[]
 }
 
-/* =========================
-   SMART PARSERS (unchanged)
-========================= */
+/* ================= PARSERS ================= */
 
 function normalizeDigits(text: string) {
   return text.replace(/[٠-٩]/g, d => "0123456789"["٠١٢٣٤٥٦٧٨٩".indexOf(d)])
@@ -31,19 +45,18 @@ function normalizeDigits(text: string) {
 
 function parseDuration(input: string) {
   if (!input) return ""
-  let text = normalizeDigits(input).replace(/,/g, ".").replace(/\s+/g, " ").trim()
+  let text = normalizeDigits(input).replace(/,/g, ".").trim()
   let years: number | null = null
   const hasHalf = /نصف|half/.test(text)
+
   if (/^(سنة|عام)$/.test(text)) years = 1
   else if (/^(سنتين|سنتان|عامين)$/.test(text)) years = 2
   else {
     const num = text.match(/(\d+(\.\d+)?)/)
     if (num) years = parseFloat(num[1])
   }
-  if (hasHalf) {
-    if (years === null) years = 0.5
-    else if (!String(years).includes(".5")) years += 0.5
-  }
+
+  if (hasHalf) years = (years ?? 0) + 0.5
   return years ? `${years} سنة` : text
 }
 
@@ -63,41 +76,49 @@ function parseBulk(text: string) {
       const namePart = parts[0] || ""
       const durationRaw = parts[1] || ""
       const tuitionRaw = parts[2] || ""
+
       const splitIndex = namePart.indexOf("/")
-      const name_ar = splitIndex === -1 ? namePart.trim() : namePart.slice(0, splitIndex).trim()
-      const name_en = splitIndex === -1 ? namePart.trim() : namePart.slice(splitIndex + 1).trim()
+      const name_ar =
+        splitIndex === -1 ? namePart : namePart.slice(0, splitIndex)
+      const name_en =
+        splitIndex === -1 ? namePart : namePart.slice(splitIndex + 1)
+
       return {
-        name_ar,
-        name_en,
+        name_ar: name_ar.trim(),
+        name_en: name_en.trim(),
         duration: parseDuration(durationRaw),
         tuition: parseTuition(tuitionRaw),
       }
     })
 }
 
-/* ========================= */
+/* ================= COMPONENT ================= */
 
-export function SpecializationsManager({ universityId, specializations }: Props) {
+export function SpecializationsManager({
+  universityId,
+  specializations,
+}: Props) {
   const router = useRouter()
+
   const [items, setItems] = useState(specializations)
-  const [editing, setEditing] = useState<string | null>(null)
-  const [adding, setAdding] = useState(false)
   const [bulkModalOpen, setBulkModalOpen] = useState(false)
   const [bulkText, setBulkText] = useState("")
+  const [editForm, setEditForm] = useState<Specialization | null>(null)
   const [loading, setLoading] = useState(false)
 
-  function resetForm() {
-    setEditing(null)
-    setAdding(false)
+  function resetBulk() {
     setBulkText("")
     setBulkModalOpen(false)
   }
+
+  /* ================= BULK ADD ================= */
 
   async function handleBulkAdd() {
     const parsed = parseBulk(bulkText).filter(
       s => s.name_ar && s.duration && s.tuition
     )
     if (!parsed.length) return
+
     setLoading(true)
     try {
       const res = await fetch(
@@ -108,24 +129,74 @@ export function SpecializationsManager({ universityId, specializations }: Props)
           body: JSON.stringify(parsed),
         }
       )
-      if (!res.ok) {
-        const err = await res.json()
-        console.error(err)
-        throw new Error("Bulk add failed")
-      }
-      const addedSpecs: Specialization[] = await res.json()
-      setItems(prev => [...prev, ...addedSpecs])
-      resetForm()
+
+      if (!res.ok) throw new Error("Bulk add failed")
+
+      const added: Specialization[] = await res.json()
+      setItems(prev => [...prev, ...added])
+      resetBulk()
     } finally {
       setLoading(false)
     }
   }
 
+  /* ================= DELETE ================= */
+
+  async function handleDelete(id: string) {
+    if (!confirm("Delete this specialization?")) return
+
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/specializations/${id}`, {
+        method: "DELETE",
+      })
+
+      if (!res.ok) throw new Error("Delete failed")
+
+      setItems(prev => prev.filter(s => s.id !== id))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /* ================= EDIT ================= */
+
+  async function handleEditSave() {
+    if (!editForm) return
+
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/specializations/${editForm.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name_en: editForm.name_en,
+          name_ar: editForm.name_ar,
+          duration: editForm.duration,
+          tuition: editForm.tuition,
+        }),
+      })
+
+      if (!res.ok) throw new Error("Update failed")
+
+      const updated: Specialization = await res.json()
+
+      setItems(prev =>
+        prev.map(s => (s.id === updated.id ? updated : s))
+      )
+
+      setEditForm(null)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /* ================= UI ================= */
+
   return (
     <>
       <Card>
         <CardContent className="pt-6 space-y-6">
-          {/* TABLE */}
           <Table>
             <TableHeader>
               <TableRow>
@@ -144,10 +215,19 @@ export function SpecializationsManager({ universityId, specializations }: Props)
                   <TableCell>{spec.duration}</TableCell>
                   <TableCell>{spec.tuition}</TableCell>
                   <TableCell className="flex gap-1">
-                    <Button size="icon" variant="ghost" onClick={() => setEditing(spec.id)}>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => setEditForm(spec)}
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button size="icon" variant="ghost">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleDelete(spec.id)}
+                      disabled={loading}
+                    >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </TableCell>
@@ -156,9 +236,8 @@ export function SpecializationsManager({ universityId, specializations }: Props)
             </TableBody>
           </Table>
 
-          {/* ACTIONS */}
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setAdding(true)}>
+            <Button variant="outline">
               <Plus className="h-4 w-4 me-2" /> Add One
             </Button>
 
@@ -169,39 +248,91 @@ export function SpecializationsManager({ universityId, specializations }: Props)
         </CardContent>
       </Card>
 
-      {/* BULK ADD MODAL */}
-{bulkModalOpen && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-    <Card className="w-full max-w-lg">
-      <CardContent className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">Bulk Add Specializations</h3>
-          <Button variant="ghost" size="icon" onClick={resetForm}>
-            <X />
-          </Button>
+      {/* BULK MODAL */}
+      {bulkModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="w-full max-w-lg">
+            <CardContent className="space-y-4 pt-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Bulk Add</h3>
+                <Button size="icon" variant="ghost" onClick={resetBulk}>
+                  <X />
+                </Button>
+              </div>
+
+              <Textarea
+                className="max-h-64 overflow-y-auto"
+                rows={8}
+                value={bulkText}
+                onChange={e => setBulkText(e.target.value)}
+              />
+
+              <div className="flex justify-end gap-2">
+                <Button onClick={handleBulkAdd} disabled={loading}>
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Add All"
+                  )}
+                </Button>
+                <Button variant="ghost" onClick={resetBulk}>
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
+      )}
 
-        <Textarea
-          className="max-h-64 overflow-y-auto" // <-- max height and scroll
-          rows={8}
-          placeholder="Paste rows here..."
-          value={bulkText}
-          onChange={e => setBulkText(e.target.value)}
-        />
+      {/* EDIT MODAL */}
+      {editForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="w-full max-w-lg">
+            <CardContent className="space-y-3 pt-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Edit Specialization</h3>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setEditForm(null)}
+                >
+                  <X />
+                </Button>
+              </div>
 
-        <div className="flex justify-end gap-2">
-          <Button onClick={handleBulkAdd} disabled={loading}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add All"}
-          </Button>
-          <Button variant="ghost" onClick={resetForm}>
-            Cancel
-          </Button>
+              {["name_en", "name_ar", "duration", "tuition"].map(key => (
+                <input
+                  key={key}
+                  className="w-full border rounded p-2"
+                  value={(editForm as any)[key]}
+                  onChange={e =>
+                    setEditForm({
+                      ...editForm,
+                      [key]: e.target.value,
+                    })
+                  }
+                />
+              ))}
+
+              <div className="flex justify-end gap-2">
+                <Button onClick={handleEditSave} disabled={loading}>
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Save"
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setEditForm(null)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </CardContent>
-    </Card>
-  </div>
-)}
-
+      )}
     </>
   )
 }
