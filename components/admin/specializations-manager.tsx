@@ -101,15 +101,15 @@ function parseBulk(text: string) {
       }
       
       // Extract duration (number + time unit)
-      const durationMatch = line.match(/(\d+\.?\d*)\s*(سنة|سنوات|أشهر|شهر|year|years?|months?)/i)
+      const durationMatch = line.match(/(\d+\.?\d*)\s*(سنة|سنتين|سنتان|سنوات|أشهر|شهر|year|years?|months?)/i)
       if (durationMatch) {
         durationRaw = durationMatch[0]
         line = line.replace(durationMatch[0], "").trim()
       } else {
-        // Check for standalone unit (like "سنة" without a number)
-        const unitMatch = line.match(/(سنة|سنوات|أشهر|شهر|year|years?|months?)/i)
+        // Check for standalone unit (like "سنة" or "سنتين" without a number)
+        const unitMatch = line.match(/(سنتين|سنتان|سنة|سنوات|أشهر|شهر|year|years?|months?)/i)
         if (unitMatch) {
-          durationRaw = unitMatch[0] // Just the unit, parseDuration will add "1"
+          durationRaw = unitMatch[0] // Just the unit, parseDuration will handle it
           line = line.replace(unitMatch[0], "").trim()
         }
       }
