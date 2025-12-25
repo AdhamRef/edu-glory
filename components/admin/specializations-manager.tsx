@@ -37,20 +37,22 @@ interface Props {
   specializations: Specialization[]
 }
 
-/* ================= PARSERS ================= */
+/* ================= HELPERS ================= */
 
 function normalizeDigits(text: string) {
   return text.replace(/[٠-٩]/g, d => "0123456789"["٠١٢٣٤٥٦٧٨٩".indexOf(d)])
 }
 
+/* ================= PARSERS ================= */
+
 function parseDuration(input: string) {
   if (!input) return ""
   let text = normalizeDigits(input).replace(/,/g, ".").trim()
   let years: number | null = null
-  const hasHalf = /نصف|half/.test(text)
+  const hasHalf = /نصف|half/i.test(text)
 
-  if (/^(سنة|عام)$/.test(text)) years = 1
-  else if (/^(سنتين|سنتان|عامين)$/.test(text)) years = 2
+  if (/^(سنة|عام)$/i.test(text)) years = 1
+  else if (/^(سنتين|سنتان|عامين)$/i.test(text)) years = 2
   else {
     const num = text.match(/(\d+(\.\d+)?)/)
     if (num) years = parseFloat(num[1])
@@ -65,6 +67,18 @@ function parseTuition(input: string) {
   const cleaned = normalizeDigits(input).match(/[\d,.]+/)
   return cleaned ? `${cleaned[0]} دولار` : input
 }
+function isTuition(text: string) {
+  // MUST have currency
+  return /(دولار|\$|usd)/i.test(text)
+}
+
+function isDuration(text: string) {
+  return /(سنة|سنوات|year|years)/i.test(text)
+}
+
+function hasArabic(text: string) {
+  return /[\u0600-\u06FF]/.test(text)
+}
 
 function parseBulk(text: string) {
   return text
@@ -72,25 +86,63 @@ function parseBulk(text: string) {
     .map(l => l.trim())
     .filter(Boolean)
     .map(line => {
-      const parts = line.split(/\t+/)
-      const namePart = parts[0] || ""
-      const durationRaw = parts[1] || ""
-      const tuitionRaw = parts[2] || ""
+      // First, extract tuition and duration using regex (more reliable)
+      let tuitionRaw = ""
+      let durationRaw = ""
+      
+      // Extract tuition (number + currency indicator)
+      const tuitionMatch = line.match(/(\d+[,.]?\d*)\s*(دولار|\$|usd)/i)
+      if (tuitionMatch) {
+        tuitionRaw = tuitionMatch[0]
+        line = line.replace(tuitionMatch[0], "").trim()
+      }
+      
+      // Extract duration (number + year indicator)
+      const durationMatch = line.match(/(\d+\.?\d*)\s*(سنة|سنوات|year|years?)/i)
+      if (durationMatch) {
+        durationRaw = durationMatch[0]
+        line = line.replace(durationMatch[0], "").trim()
+      }
+      
+      // What's left is the name (clean up extra spaces and tabs)
+      const rawName = line.replace(/\t+/g, " ").replace(/\s+/g, " ").trim()
 
-      const splitIndex = namePart.indexOf("/")
-      const name_ar =
-        splitIndex === -1 ? namePart : namePart.slice(0, splitIndex)
-      const name_en =
-        splitIndex === -1 ? namePart : namePart.slice(splitIndex + 1)
+      let name_en = ""
+      let name_ar = ""
+
+      // Split by slash if present
+      if (rawName.includes("/")) {
+        const parts = rawName.split("/").map(s => s.trim())
+        // First part is Arabic (has Arabic chars), second is English
+        const arPart = parts.find(p => hasArabic(p)) || parts[0]
+        const enPart = parts.find(p => !hasArabic(p)) || parts[1] || parts[0]
+        
+        name_ar = arPart
+        name_en = enPart
+      }
+      // English only
+      else if (!hasArabic(rawName)) {
+        name_en = rawName
+        name_ar = rawName
+      }
+      // Arabic only
+      else {
+        name_ar = rawName
+        name_en = rawName
+      }
 
       return {
-        name_ar: name_ar.trim(),
-        name_en: name_en.trim(),
+        name_en,
+        name_ar,
         duration: parseDuration(durationRaw),
         tuition: parseTuition(tuitionRaw),
       }
     })
 }
+
+
+
+
 
 /* ================= COMPONENT ================= */
 
@@ -169,22 +221,15 @@ export function SpecializationsManager({
       const res = await fetch(`/api/specializations/${editForm.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name_en: editForm.name_en,
-          name_ar: editForm.name_ar,
-          duration: editForm.duration,
-          tuition: editForm.tuition,
-        }),
+        body: JSON.stringify(editForm),
       })
 
       if (!res.ok) throw new Error("Update failed")
 
       const updated: Specialization = await res.json()
-
       setItems(prev =>
         prev.map(s => (s.id === updated.id ? updated : s))
       )
-
       setEditForm(null)
     } finally {
       setLoading(false)
@@ -322,10 +367,7 @@ export function SpecializationsManager({
                     "Save"
                   )}
                 </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => setEditForm(null)}
-                >
+                <Button variant="ghost" onClick={() => setEditForm(null)}>
                   Cancel
                 </Button>
               </div>
