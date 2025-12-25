@@ -86,6 +86,9 @@ function parseBulk(text: string) {
     .map(l => l.trim())
     .filter(Boolean)
     .map(line => {
+      // Remove all percentages first (they're not duration)
+      line = line.replace(/\d+\.?\d*%/g, "").trim()
+      
       // First, extract tuition and duration using regex (more reliable)
       let tuitionRaw = ""
       let durationRaw = ""
@@ -97,11 +100,18 @@ function parseBulk(text: string) {
         line = line.replace(tuitionMatch[0], "").trim()
       }
       
-      // Extract duration (number + year indicator)
-      const durationMatch = line.match(/(\d+\.?\d*)\s*(سنة|سنوات|year|years?)/i)
+      // Extract duration (number + time unit)
+      const durationMatch = line.match(/(\d+\.?\d*)\s*(سنة|سنوات|أشهر|شهر|year|years?|months?)/i)
       if (durationMatch) {
         durationRaw = durationMatch[0]
         line = line.replace(durationMatch[0], "").trim()
+      } else {
+        // Check for standalone unit (like "سنة" without a number)
+        const unitMatch = line.match(/(سنة|سنوات|أشهر|شهر|year|years?|months?)/i)
+        if (unitMatch) {
+          durationRaw = unitMatch[0] // Just the unit, parseDuration will add "1"
+          line = line.replace(unitMatch[0], "").trim()
+        }
       }
       
       // What's left is the name (clean up extra spaces and tabs)
@@ -112,13 +122,35 @@ function parseBulk(text: string) {
 
       // Split by slash if present
       if (rawName.includes("/")) {
-        const parts = rawName.split("/").map(s => s.trim())
-        // First part is Arabic (has Arabic chars), second is English
-        const arPart = parts.find(p => hasArabic(p)) || parts[0]
-        const enPart = parts.find(p => !hasArabic(p)) || parts[1] || parts[0]
+        const parts = rawName.split("/").map(s => s.trim()).filter(Boolean)
         
-        name_ar = arPart
-        name_en = enPart
+        // Intelligently detect which is Arabic and which is English
+        if (parts.length >= 2) {
+          const firstHasArabic = hasArabic(parts[0])
+          const secondHasArabic = hasArabic(parts[1])
+          
+          if (firstHasArabic && !secondHasArabic) {
+            // Arabic / English
+            name_ar = parts[0]
+            name_en = parts[1]
+          } else if (!firstHasArabic && secondHasArabic) {
+            // English / Arabic
+            name_en = parts[0]
+            name_ar = parts[1]
+          } else if (firstHasArabic && secondHasArabic) {
+            // Both Arabic (shouldn't happen, but handle it)
+            name_ar = parts[0]
+            name_en = parts[1]
+          } else {
+            // Both English (shouldn't happen, but handle it)
+            name_en = parts[0]
+            name_ar = parts[1]
+          }
+        } else {
+          // Only one part (edge case)
+          name_ar = parts[0] || rawName
+          name_en = parts[0] || rawName
+        }
       }
       // English only
       else if (!hasArabic(rawName)) {
