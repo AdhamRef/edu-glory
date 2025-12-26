@@ -131,6 +131,7 @@
   },
   "university": {
     "specializations": "التخصصات",
+    "searchPlaceholder": "ابحث عن التخصصات...",
     "duration": "المدة",
     "tuition": "الرسوم",
     "apply": "قدم الآن",

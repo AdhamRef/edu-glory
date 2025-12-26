@@ -86,90 +86,139 @@ function parseBulk(text: string) {
     .map(l => l.trim())
     .filter(Boolean)
     .map(line => {
-      // Remove all percentages first (they're not duration)
-      line = line.replace(/\d+\.?\d*%/g, "").trim()
+      // Split by tab first - your data is tab-separated
+      const parts = line.split("\t").map(s => s.trim()).filter(Boolean)
       
-      // First, extract tuition and duration using regex (more reliable)
-      let tuitionRaw = ""
-      let durationRaw = ""
-      
-      // Extract tuition (number + currency indicator)
-      const tuitionMatch = line.match(/(\d+[,.]?\d*)\s*(دولار|\$|usd)/i)
-      if (tuitionMatch) {
-        tuitionRaw = tuitionMatch[0]
-        line = line.replace(tuitionMatch[0], "").trim()
-      }
-      
-      // Extract duration (number + time unit)
-      const durationMatch = line.match(/(\d+\.?\d*)\s*(سنة|سنتين|سنتان|سنوات|أشهر|شهر|year|years?|months?)/i)
-      if (durationMatch) {
-        durationRaw = durationMatch[0]
-        line = line.replace(durationMatch[0], "").trim()
+      if (parts.length >= 3) {
+        // Tab-separated format: [name] [duration] [tuition]
+        return parseTabSeparated(parts[0], parts[1], parts[2])
       } else {
-        // Check for standalone unit (like "سنة" or "سنتين" without a number)
-        const unitMatch = line.match(/(سنتين|سنتان|سنة|سنوات|أشهر|شهر|year|years?|months?)/i)
-        if (unitMatch) {
-          durationRaw = unitMatch[0] // Just the unit, parseDuration will handle it
-          line = line.replace(unitMatch[0], "").trim()
-        }
-      }
-      
-      // What's left is the name (clean up extra spaces and tabs)
-      const rawName = line.replace(/\t+/g, " ").replace(/\s+/g, " ").trim()
-
-      let name_en = ""
-      let name_ar = ""
-
-      // Split by slash if present
-      if (rawName.includes("/")) {
-        const parts = rawName.split("/").map(s => s.trim()).filter(Boolean)
-        
-        // Intelligently detect which is Arabic and which is English
-        if (parts.length >= 2) {
-          const firstHasArabic = hasArabic(parts[0])
-          const secondHasArabic = hasArabic(parts[1])
-          
-          if (firstHasArabic && !secondHasArabic) {
-            // Arabic / English
-            name_ar = parts[0]
-            name_en = parts[1]
-          } else if (!firstHasArabic && secondHasArabic) {
-            // English / Arabic
-            name_en = parts[0]
-            name_ar = parts[1]
-          } else if (firstHasArabic && secondHasArabic) {
-            // Both Arabic (shouldn't happen, but handle it)
-            name_ar = parts[0]
-            name_en = parts[1]
-          } else {
-            // Both English (shouldn't happen, but handle it)
-            name_en = parts[0]
-            name_ar = parts[1]
-          }
-        } else {
-          // Only one part (edge case)
-          name_ar = parts[0] || rawName
-          name_en = parts[0] || rawName
-        }
-      }
-      // English only
-      else if (!hasArabic(rawName)) {
-        name_en = rawName
-        name_ar = rawName
-      }
-      // Arabic only
-      else {
-        name_ar = rawName
-        name_en = rawName
-      }
-
-      return {
-        name_en,
-        name_ar,
-        duration: parseDuration(durationRaw),
-        tuition: parseTuition(tuitionRaw),
+        // Fallback to the old logic if no tabs found
+        return parseBulkOldWay(line)
       }
     })
+}
+
+// Handle tab-separated data
+function parseTabSeparated(rawName: string, durationRaw: string, tuitionRaw: string) {
+  let name_en = ""
+  let name_ar = ""
+
+  // Split name by slash if present
+  if (rawName.includes("/")) {
+    const nameParts = rawName.split("/").map(s => s.trim()).filter(Boolean)
+    
+    if (nameParts.length >= 2) {
+      const firstHasArabic = hasArabic(nameParts[0])
+      const secondHasArabic = hasArabic(nameParts[1])
+      
+      if (firstHasArabic && !secondHasArabic) {
+        name_ar = nameParts[0]
+        name_en = nameParts[1]
+      } else if (!firstHasArabic && secondHasArabic) {
+        name_en = nameParts[0]
+        name_ar = nameParts[1]
+      } else if (firstHasArabic && secondHasArabic) {
+        name_ar = nameParts[0]
+        name_en = nameParts[1]
+      } else {
+        name_en = nameParts[0]
+        name_ar = nameParts[1]
+      }
+    } else {
+      name_ar = nameParts[0] || rawName
+      name_en = nameParts[0] || rawName
+    }
+  } else if (!hasArabic(rawName)) {
+    name_en = rawName
+    name_ar = rawName
+  } else {
+    name_ar = rawName
+    name_en = rawName
+  }
+
+  return {
+    name_en,
+    name_ar,
+    duration: parseDuration(durationRaw),
+    tuition: parseTuition(tuitionRaw),
+  }
+}
+
+// Fallback parser for non-tab-separated data
+function parseBulkOldWay(line: string) {
+  // Remove all percentages first
+  line = line.replace(/\d+\.?\d*%/g, "").trim()
+  
+  let tuitionRaw = ""
+  let durationRaw = ""
+  
+  // Extract tuition (more flexible pattern - can be "دولار X" or "X دولار")
+  const tuitionMatch = line.match(/(\d+[,.]?\d*)\s*(دولار|\$|usd)|(دولار|\$|usd)\s*(\d+[,.]?\d*)/i)
+  if (tuitionMatch) {
+    tuitionRaw = tuitionMatch[0]
+    line = line.replace(tuitionMatch[0], "|||").trim() // Use placeholder to avoid issues
+  }
+  
+  // Extract duration (must extract BEFORE processing the name)
+  const durationMatch = line.match(/(\d+\.?\d*)\s*(سنة|سنتين|سنتان|سنوات|أشهر|شهر|year|years?|months?)/i)
+  if (durationMatch) {
+    durationRaw = durationMatch[0]
+    line = line.replace(durationMatch[0], "|||").trim() // Use placeholder
+  } else {
+    const unitMatch = line.match(/(سنتين|سنتان|سنة|سنوات|أشهر|شهر|year|years?|months?)/i)
+    if (unitMatch) {
+      durationRaw = unitMatch[0]
+      line = line.replace(unitMatch[0], "|||").trim()
+    }
+  }
+  
+  // Remove placeholders and clean up
+  line = line.replace(/\|\|\|/g, " ").replace(/\s+/g, " ").trim()
+  
+  const rawName = line
+
+  let name_en = ""
+  let name_ar = ""
+
+  if (rawName.includes("/")) {
+    const parts = rawName.split("/").map(s => s.trim()).filter(Boolean)
+    
+    if (parts.length >= 2) {
+      const firstHasArabic = hasArabic(parts[0])
+      const secondHasArabic = hasArabic(parts[1])
+      
+      if (firstHasArabic && !secondHasArabic) {
+        name_ar = parts[0]
+        name_en = parts[1]
+      } else if (!firstHasArabic && secondHasArabic) {
+        name_en = parts[0]
+        name_ar = parts[1]
+      } else if (firstHasArabic && secondHasArabic) {
+        name_ar = parts[0]
+        name_en = parts[1]
+      } else {
+        name_en = parts[0]
+        name_ar = parts[1]
+      }
+    } else {
+      name_ar = parts[0] || rawName
+      name_en = parts[0] || rawName
+    }
+  } else if (!hasArabic(rawName)) {
+    name_en = rawName
+    name_ar = rawName
+  } else {
+    name_ar = rawName
+    name_en = rawName
+  }
+
+  return {
+    name_en,
+    name_ar,
+    duration: parseDuration(durationRaw),
+    tuition: parseTuition(tuitionRaw),
+  }
 }
 
 

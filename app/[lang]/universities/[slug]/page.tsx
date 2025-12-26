@@ -1,78 +1,124 @@
-import { notFound } from "next/navigation"
-import Image from "next/image"
-import Link from "next/link"
-import { getDictionary, type Locale } from "@/lib/i18n"
-import { prisma } from "@/lib/prisma"
-import { SpecializationsTable } from "@/components/specializations-table"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, ArrowRight, GraduationCap } from "lucide-react"
-import sanitizeHtml from "sanitize-html"
+import { notFound } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import { getDictionary, type Locale } from "@/lib/i18n";
+import { prisma } from "@/lib/prisma";
+import { SpecializationsTable } from "@/components/specializations-table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, ArrowRight, GraduationCap } from "lucide-react";
+import sanitizeHtml from "sanitize-html";
 
 export default async function UniversityPage({
   params,
 }: {
-  params: Promise<{ lang: Locale; slug: string }>
+  params: Promise<{ lang: Locale; slug: string }>;
 }) {
-  const { lang, slug } = await params
-  const dict = await getDictionary(lang)
+  const { lang, slug } = await params;
+  const dict = await getDictionary(lang);
 
   const university = await prisma.university.findUnique({
     where: { slug, isPublished: true },
     include: { specializations: true },
-  })
+  });
 
   if (!university) {
-    notFound()
+    notFound();
   }
 
-  const name = lang === "ar" ? university.name_ar : university.name_en
-  const shortDesc = lang === "ar" ? university.short_ar : university.short_en
-  const content = lang === "ar" ? university.content_ar : university.content_en
+  const name = lang === "ar" ? university.name_ar : university.name_en;
+  const shortDesc = lang === "ar" ? university.short_ar : university.short_en;
+  const content = lang === "ar" ? university.content_ar : university.content_en;
   const sanitizedContent = content
-  ? sanitizeHtml(content, {
-      allowedTags: sanitizeHtml.defaults.allowedTags.concat([
-        "img",
-        "iframe",
-        "h1",
-        "h2",
-        "h3",
-      ]),
-      allowedAttributes: {
-        ...sanitizeHtml.defaults.allowedAttributes,
-        iframe: ["src", "allow", "allowfullscreen", "frameborder"],
-        img: ["src", "alt", "title", "width", "height"],
-        a: ["href", "name", "target", "rel"],
-      },
-      allowedSchemes: ["http", "https", "mailto"],
-      transformTags: {
-        a: sanitizeHtml.simpleTransform("a", {
-          rel: "noopener noreferrer",
-          target: "_blank",
-        }),
-      },
-    })
-  : ""
+    ? sanitizeHtml(content, {
+        allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+          "img",
+          "iframe",
+          "h1",
+          "h2",
+          "h3",
+        ]),
+        allowedAttributes: {
+          ...sanitizeHtml.defaults.allowedAttributes,
+          iframe: ["src", "allow", "allowfullscreen", "frameborder"],
+          img: ["src", "alt", "title", "width", "height"],
+          a: ["href", "name", "target", "rel"],
+        },
+        allowedSchemes: ["http", "https", "mailto"],
+        transformTags: {
+          a: sanitizeHtml.simpleTransform("a", {
+            rel: "noopener noreferrer",
+            target: "_blank",
+          }),
+        },
+      })
+    : "";
 
-  const BackArrow = lang === "ar" ? ArrowRight : ArrowLeft
+  const BackArrow = lang === "ar" ? ArrowRight : ArrowLeft;
+
+  function getYouTubeEmbedUrl(url: string): string {
+    if (!url) return "";
+
+    try {
+      const urlObj = new URL(url);
+      let videoId = "";
+
+      // Handle youtu.be short links (like https://youtu.be/mahL07XE_yc)
+      if (urlObj.hostname === "youtu.be") {
+        videoId = urlObj.pathname.slice(1).split("?")[0];
+      }
+      // Handle standard youtube.com URLs (like https://www.youtube.com/watch?v=...)
+      else if (urlObj.hostname.includes("youtube.com")) {
+        // Check for /watch?v= format
+        videoId = urlObj.searchParams.get("v") || "";
+
+        // Check for /embed/ format (already embedded)
+        if (!videoId && urlObj.pathname.includes("/embed/")) {
+          videoId = urlObj.pathname.split("/embed/")[1].split("?")[0];
+        }
+
+        // Check for /v/ format
+        if (!videoId && urlObj.pathname.includes("/v/")) {
+          videoId = urlObj.pathname.split("/v/")[1].split("?")[0];
+        }
+      }
+
+      // Clean up video ID (remove any extra parameters)
+      videoId = videoId.split("&")[0].split("?")[0];
+
+      // Return embed URL if we found a video ID
+      if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+
+      // Fallback: return original URL
+      return url;
+    } catch (error) {
+      // If URL parsing fails, try simple string replacement as fallback
+      return url
+        .replace("watch?v=", "embed/")
+        .replace("youtu.be/", "youtube.com/embed/");
+    }
+  }
 
   const getTypeLabel = () => {
     if (university.type === "institute") {
-      return lang === "ar" ? "معهد" : "Institute"
+      return lang === "ar" ? "معهد" : "Institute";
     }
     switch (university.universityType) {
       case "private":
-        return lang === "ar" ? "جامعة خاصة" : "Private University"
+        return lang === "ar" ? "جامعة خاصة" : "Private University";
       case "foreign":
-        return lang === "ar" ? "جامعة أجنبية" : "Foreign University"
+        return lang === "ar" ? "جامعة أجنبية" : "Foreign University";
       case "government":
-        return lang === "ar" ? "جامعة حكومية" : "Government University"
+        return lang === "ar" ? "جامعة حكومية" : "Government University";
       default:
-        return lang === "ar" ? "جامعة" : "University"
+        return lang === "ar" ? "جامعة" : "University";
     }
-  }
+  };
 
-  const heroImage = university.images[0] || "/placeholder.svg"
+  const heroImage =
+    university.images[1] || university.images[0] || "/placeholder.svg";
 
   return (
     <div className="min-h-screen">
@@ -94,7 +140,11 @@ export default async function UniversityPage({
         <div className="relative container mx-auto max-w-5xl px-4 pt-8 pb-32">
           {/* Back Button */}
           <div className="mb-12">
-            <Button variant="secondary" asChild className="backdrop-blur-sm bg-blue-900/90">
+            <Button
+              variant="secondary"
+              asChild
+              className="backdrop-blur-sm bg-blue-900/90"
+            >
               <Link href={`/${lang}/universities`}>
                 <BackArrow className="h-4 w-4 me-2" />
                 {dict.common.back}
@@ -109,17 +159,21 @@ export default async function UniversityPage({
                 {getTypeLabel()}
               </Badge>
               {university.specializations.length > 0 && (
-                <Badge variant="secondary" className="text-sm px-4 py-1.5 backdrop-blur-sm bg-blue/90">
+                <Badge
+                  variant="secondary"
+                  className="text-sm px-4 py-1.5 backdrop-blur-sm bg-blue/90"
+                >
                   <GraduationCap className="h-3.5 w-3.5 me-1.5" />
-                  {university.specializations.length} {lang === "ar" ? "تخصصات" : "Specializations"}
+                  {university.specializations.length}{" "}
+                  {lang === "ar" ? "تخصصات" : "Specializations"}
                 </Badge>
               )}
             </div>
-            
+
             <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight drop-shadow-lg">
               {name}
             </h1>
-            
+
             {shortDesc && (
               <p className="text-xl md:text-2xl text-white/90 leading-relaxed drop-shadow-md">
                 {shortDesc}
@@ -151,7 +205,7 @@ export default async function UniversityPage({
           <div className="mb-12">
             <div className="relative aspect-video rounded-2xl overflow-hidden shadow-2xl border border-border">
               <iframe
-                src={university.videoUrl.replace("watch?v=", "embed/")}
+                src={getYouTubeEmbedUrl(university.videoUrl)}
                 title={name}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
@@ -186,8 +240,11 @@ export default async function UniversityPage({
               {lang === "ar" ? "معرض الصور" : "Gallery"}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {university.images.slice(1).map((image, index) => (
-                <div key={index} className="group relative aspect-video rounded-xl overflow-hidden shadow-lg border border-border hover:shadow-2xl transition-all duration-300">
+              {university.images.map((image, index) => (
+                <div
+                  key={index}
+                  className="group relative aspect-video rounded-xl overflow-hidden shadow-lg border border-border hover:shadow-2xl transition-all duration-300"
+                >
                   <Image
                     src={image || "/placeholder.svg"}
                     alt={`${name} - ${index + 2}`}
@@ -207,12 +264,12 @@ export default async function UniversityPage({
               {dict.university.specializations}
             </h2>
             <p className="text-muted-foreground text-lg">
-              {lang === "ar" 
-                ? "استكشف البرامج الأكاديمية والتخصصات المتاحة" 
+              {lang === "ar"
+                ? "استكشف البرامج الأكاديمية والتخصصات المتاحة"
                 : "Explore available academic programs and specializations"}
             </p>
           </div>
-          
+
           <SpecializationsTable
             specializations={university.specializations}
             universitySlug={university.slug}
@@ -222,5 +279,5 @@ export default async function UniversityPage({
         </div>
       </div>
     </div>
-  )
+  );
 }

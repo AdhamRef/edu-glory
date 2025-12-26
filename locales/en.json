@@ -131,6 +131,7 @@
   },
   "university": {
     "specializations": "Specializations",
+    "searchPlaceholder": "Search specializations...",
     "duration": "Duration",
     "tuition": "Tuition",
     "apply": "Apply Now",
